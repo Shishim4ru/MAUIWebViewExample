@@ -1,17 +1,6 @@
 ﻿
 using WebViewHostExample.Controls;
-
-#if ANDROID
-using WebViewHostExample.Platforms.Droid.Renderers;
-#endif
-
-#if IOS
-using WebViewHostExample.Platforms.iOS.Renderers;
-#endif
-
-#if WINDOWS
-using WebViewHostExample.WinUI;
-#endif
+using WebViewHostExample.Handlers;
 
 namespace WebViewHostExample;
 

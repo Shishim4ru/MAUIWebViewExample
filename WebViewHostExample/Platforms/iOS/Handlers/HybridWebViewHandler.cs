@@ -8,66 +8,36 @@ using WebKit;
 
 using WebViewHostExample.Controls;
 
-namespace WebViewHostExample.Platforms.iOS.Renderers
+namespace WebViewHostExample.Handlers
 {
-    public class HybridWebViewHandler : ViewHandler<IHybridWebView, WKWebView>
+    public partial class HybridWebViewHandler : WebViewHandler
     {
-        public static PropertyMapper<IHybridWebView, HybridWebViewHandler> HybridWebViewMapper = new PropertyMapper<IHybridWebView, HybridWebViewHandler>(ViewHandler.ViewMapper);
-
-        const string JavaScriptFunction = "function invokeCSharpAction(data){window.webkit.messageHandlers.invokeAction.postMessage(data);}";
+        public static PropertyMapper<IHybridWebView, HybridWebViewHandler> HybridWebViewPropertyMapper = new PropertyMapper<IHybridWebView, HybridWebViewHandler>(WebViewHandler.Mapper);
+        public static CommandMapper<IHybridWebView, HybridWebViewHandler> HybridWebViewCommandMapper = new CommandMapper<IHybridWebView, HybridWebViewHandler>(WebViewHandler.CommandMapper);
 
         private WKUserContentController userController;
         private JSBridge jsBridgeHandler;
-        static SynchronizationContext sync;
 
 
-        public HybridWebViewHandler() : base(HybridWebViewMapper)
+        public HybridWebViewHandler() : base(HybridWebViewPropertyMapper, HybridWebViewCommandMapper)
         {
-            sync = SynchronizationContext.Current;
-        }
-
-        private void VirtualView_SourceChanged(object sender, SourceChangedEventArgs e)
-        {
-            LoadSource(e.Source, PlatformView);
         }
 
         protected override WKWebView CreatePlatformView()
         {
-            sync = sync ?? SynchronizationContext.Current;
+            var platformView = base.CreatePlatformView();
+            
             jsBridgeHandler = new JSBridge(this);
-            userController = new WKUserContentController();
+            userController = platformView.Configuration.UserContentController ?? new WKUserContentController();
 
-            var script = new WKUserScript(new NSString(JavaScriptFunction), WKUserScriptInjectionTime.AtDocumentEnd, false);
-
-            userController.AddUserScript(script);
             userController.AddScriptMessageHandler(jsBridgeHandler, "invokeAction");
 
-            var config = new WKWebViewConfiguration { UserContentController = userController };
-            var webView = new WKWebView(CGRect.Empty, config);
-
-            return webView;            
+            return platformView;            
         }
 
         protected override void ConnectHandler(WKWebView platformView)
         {
             base.ConnectHandler(platformView);
-
-            if (VirtualView.Source != null)
-            {
-                LoadSource(VirtualView.Source, PlatformView);
-            }
-
-            VirtualView.SourceChanged += VirtualView_SourceChanged;
-            VirtualView.RequestEvaluateJavaScript += VirtualView_RequestEvaluateJavaScript;
-        }
-
-        private void VirtualView_RequestEvaluateJavaScript(object sender, EvaluateJavaScriptAsyncRequest e)
-        {
-            sync.Post((o) =>
-            {
-                var script = new WKUserScript(new NSString(e.Script), WKUserScriptInjectionTime.AtDocumentEnd, false);
-                userController.AddUserScript(script);
-            }, null);
         }
 
 
@@ -75,7 +45,6 @@ namespace WebViewHostExample.Platforms.iOS.Renderers
         {
             base.DisconnectHandler(platformView);
 
-            VirtualView.SourceChanged -= VirtualView_SourceChanged;
 
             userController.RemoveAllUserScripts();
             userController.RemoveScriptMessageHandler("invokeAction");
@@ -84,19 +53,6 @@ namespace WebViewHostExample.Platforms.iOS.Renderers
             jsBridgeHandler = null;
         }
 
-
-        private static void LoadSource(WebViewSource source, WKWebView control)
-        {
-            if (source is HtmlWebViewSource html)
-            {
-                control.LoadHtmlString(html.Html, new NSUrl(html.BaseUrl ?? "http://localhost", true));
-            }
-            else if (source is UrlWebViewSource url)
-            {
-                control.LoadRequest(new NSUrlRequest(new NSUrl(url.Url)));
-            }
-
-        }
 
     }
 
@@ -115,7 +71,7 @@ namespace WebViewHostExample.Platforms.iOS.Renderers
 
             if (hybridWebViewRenderer.TryGetTarget(out hybridRenderer))
             {
-                hybridRenderer.VirtualView?.InvokeAction(message.Body.ToString());
+                (hybridRenderer.VirtualView as HybridWebView)?.InvokeAction(message.Body.ToString());
             }
         }
     }

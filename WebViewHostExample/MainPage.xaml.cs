@@ -1,34 +1,27 @@
-﻿using WebViewHostExample.ViewModels;
-
-namespace WebViewHostExample;
+﻿namespace WebViewHostExample;
 
 public partial class MainPage : ContentPage
 {
-	int count = 0;
-    MainPageViewModel vm;
 
 	public MainPage()
 	{
 		InitializeComponent();
 
-        vm = new MainPageViewModel();
-        MyWebView.BindingContext = vm;
+        MyWebView.AddLocalCallback("invokeCSharpAction", ChangeLabelText);
+        MyWebView.Source = new HtmlWebViewSource() { Html = htmlSource };
+    }
 
-        MyWebView.JavaScriptAction += MyWebView_JavaScriptAction;
-	}
+    private void ChangeLabelText(object text)
+    {
+        Dispatcher.Dispatch(() =>
+        {
+            ChangeLabel.Text = "The Web Button Was Clicked! Count: " + text;
+        });
+    }
 
     protected override void OnParentSet()
     {
         base.OnParentSet();
-        vm.Source = new HtmlWebViewSource() { Html = htmlSource };
-    }
-
-    private void MyWebView_JavaScriptAction(object sender, Controls.JavaScriptActionEventArgs e)
-    {
-		Dispatcher.Dispatch(() =>
-		{
-            ChangeLabel.Text = "The Web Button Was Clicked! Count: " + e.Payload;
-        });
     }
 
     string htmlSource = @"
@@ -59,7 +52,7 @@ public partial class MainPage : ContentPage
 
     private async void EvalButton_Clicked(object sender, EventArgs e)
     {
-        await MyWebView.EvaluateJavaScriptAsync(new EvaluateJavaScriptAsyncRequest("nativeDemand('" + ChangeText.Text + "')")); 
+        await MyWebView.EvaluateJavaScriptAsync("nativeDemand('" + ChangeText.Text + "')"); 
     }
 }
 
