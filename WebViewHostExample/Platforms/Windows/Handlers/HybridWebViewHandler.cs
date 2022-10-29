@@ -4,6 +4,8 @@ using Microsoft.Maui.Handlers;
 using WebViewHostExample.Controls;
 using System.Net;
 using System.Text;
+using System;
+using System.Threading.Tasks;
 
 namespace WebViewHostExample.Handlers;
 
@@ -14,7 +16,6 @@ public partial class HybridWebViewHandler : WebViewHandler
 
     public HybridWebViewHandler() : base(HybridWebViewPropertyMapper, HybridWebViewCommandMapper)
     {
-        
     }
 
     protected override WebView2 CreatePlatformView()
@@ -43,5 +44,10 @@ public partial class HybridWebViewHandler : WebViewHandler
         platformView.WebMessageReceived -= PlatformView_WebMessageReceived;
         (VirtualView as HybridWebView).Cleanup();
         base.DisconnectHandler(platformView);
+    }
+
+    public async Task<string> ExecuteScriptAsync(string script)
+    {
+        return await PlatformView.ExecuteScriptAsync(script);
     }
 }

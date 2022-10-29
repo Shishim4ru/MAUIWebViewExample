@@ -1,4 +1,6 @@
-﻿namespace WebViewHostExample;
+﻿using static System.Net.Mime.MediaTypeNames;
+
+namespace WebViewHostExample;
 
 public partial class MainPage : ContentPage
 {
@@ -37,7 +39,9 @@ public partial class MainPage : ContentPage
 
     function nativeDemand(data) {
          var el = document.getElementById('webtext');
+        var old_text = el.innerText;
          el.innerHTML = data;
+        return old_text;
     }
 
 </script>
@@ -52,7 +56,11 @@ public partial class MainPage : ContentPage
 
     private async void EvalButton_Clicked(object sender, EventArgs e)
     {
-        await MyWebView.EvaluateJavaScriptAsync("nativeDemand('" + ChangeText.Text + "')"); 
+        string old_text = await MyWebView.EvaluateJavaScriptAsync("nativeDemand('" + ChangeText.Text + "')");
+        Dispatcher.Dispatch(() =>
+        {
+            ChangeLabel.Text = old_text;
+        });
     }
 }
 
